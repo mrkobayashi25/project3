@@ -276,24 +276,46 @@ bool CampusCompass::ParseCommand(const string &command) {
         bool parsed = ParseInsertCommand(command, studentName, ufid, residenceLocation, classCodes);
 
         if (!parsed) {
+            cout << "unsuccessful" << endl;
             return false;
         }
 
         if (!ValidName(studentName) || !ValidUFID(ufid)) {
+            cout << "unsuccessful" << endl;
             return false;
         }
 
         for (const string& code : classCodes) {
-            if (!ValidClassCode(code)) {
+            if (!ValidClassCode(code) || classes.find(code) == classes.end()) {
+                cout << "unsuccessful" << endl;
                 return false;
             }
         }
+        
+        // student record
+        StudentInfo newStudent;
+        newStudent.studentName = studentName;
+        newStudent.ufid = ufid;
+        newStudent.residenceLocation = residenceLocation;
 
+        for (const string& code : classCodes) {
+            newStudent.schedule.insert(code);
+        }
+
+        // if duplicates, schedule size wont match og class count
+        if (newStudent.schedule.size() != classCodes.size()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // store student
+        studentRecords[ufid] = newStudent;
+
+        cout << "successful" << endl;
         return true;
     }
 
-    // come back later
-    bool is_valid = true;
-
-    return is_valid;
+    // invalid command for now
+    cout << "unsuccessful" << endl;
+    return false;
 }
