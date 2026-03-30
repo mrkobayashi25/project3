@@ -266,13 +266,14 @@ bool CampusCompass::ParseInsertCommand(const string& command, string& studentNam
 }
 
 bool CampusCompass::ParseCommand(const string &command) {
-    // temp validation check for insert for now
+    // only doing insert rn
     if (command.rfind("insert ", 0) == 0) {
         string studentName;
         string ufid;
         int residenceLocation;
         vector<string> classCodes;
 
+        // first make sure insert format parses right
         bool parsed = ParseInsertCommand(command, studentName, ufid, residenceLocation, classCodes);
 
         if (!parsed) {
@@ -280,42 +281,51 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
+        // make sure name and ufid are valid
         if (!ValidName(studentName) || !ValidUFID(ufid)) {
             cout << "unsuccessful" << endl;
             return false;
         }
 
+        // ufid cant already exist
+        if (studentRecords.find(ufid) != studentRecords.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // make sure each class code is valid and exists
         for (const string& code : classCodes) {
             if (!ValidClassCode(code) || classes.find(code) == classes.end()) {
                 cout << "unsuccessful" << endl;
                 return false;
             }
         }
-        
-        // student record
+
+        // make new student object
         StudentInfo newStudent;
         newStudent.studentName = studentName;
         newStudent.ufid = ufid;
         newStudent.residenceLocation = residenceLocation;
 
+        // add all classes to schedule
         for (const string& code : classCodes) {
             newStudent.schedule.insert(code);
         }
 
-        // if duplicates, schedule size wont match og class count
+        // if duplicates got passed in, schedule size wont match
         if (newStudent.schedule.size() != classCodes.size()) {
             cout << "unsuccessful" << endl;
             return false;
         }
 
-        // store student
+        // store student record
         studentRecords[ufid] = newStudent;
 
         cout << "successful" << endl;
         return true;
     }
 
-    // invalid command for now
+    // invalid command rn
     cout << "unsuccessful" << endl;
     return false;
 }
