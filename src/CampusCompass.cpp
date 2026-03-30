@@ -1,14 +1,14 @@
 #include "CampusCompass.h"
-
 #include <string>
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cctype>
 
 using namespace std;
 
 CampusCompass::CampusCompass() {
-    // ome back later
+    // come back later
 }
 
 bool CampusCompass::ParseCSV(const string &edges_filepath, const string &classes_filepath) {
@@ -110,7 +110,7 @@ bool CampusCompass::LoadCourseData(const string& filename) {
             continue;
         }
 
-        // break current csv row into bits
+        // break current csv row to bits
         stringstream lineStream(line);
         string classCode;
         string classLocationStr;
@@ -144,12 +144,12 @@ bool CampusCompass::LoadCourseData(const string& filename) {
 void CampusCompass::PrintLoadSummary() const {
     int edgeCount = 0;
 
-    // count total stored edges in list
+    // count stored edges in list
     for (const auto& location : campusGraph) {
         edgeCount += location.second.size();
     }
 
-    // divide by 2 since each undirected edge was stored twice
+    // divide by 2
     edgeCount /= 2;
 
     // temp debug output for csv loading
@@ -158,7 +158,140 @@ void CampusCompass::PrintLoadSummary() const {
     cout << "class codes loaded: " << classes.size() << endl;
 }
 
+bool CampusCompass::ValidUFID(const string& ufid) const {
+    // ufid has to be 8 digits
+    if (ufid.length() != 8) {
+        return false;
+    }
+
+    // make sure every char is number
+    for (char ch : ufid) {
+        if (!isdigit(ch)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool CampusCompass::ValidName(const string& name) const {
+    // empty name should fail
+    if (name.empty()) {
+        return false;
+    }
+
+    // only letters / spaces allowed
+    for (char ch : name) {
+        if (!isalpha(ch) && ch != ' ') {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool CampusCompass::ValidClassCode(const string& code) const {
+    // class code should be 7 char
+    if (code.length() != 7) {
+        return false;
+    }
+
+    // first 3 should be uppercase letters
+    for (int i = 0; i < 3; i++) {
+        if (!isupper(code[i])) {
+            return false;
+        }
+    }
+
+    // last 4 should be digits
+    for (int i = 3; i < 7; i++) {
+        if (!isdigit(code[i])) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool CampusCompass::ValidClassCount(int count) const {
+    // class count has to be between 1 and 6
+    return count >= 1 && count <= 6;
+}
+
+bool CampusCompass::ParseInsertCommand(const string& command, string& studentName, string& ufid, int& residenceLocation,
+                                       vector<string>& classCodes) const {
+    // clear old class codes first
+    classCodes.clear();
+
+    // find quoted name
+    size_t firstQuote = command.find('"');
+    size_t secondQuote = command.find('"', firstQuote + 1);
+
+    // if quotes are missing or messed up, fail
+    if (firstQuote == string::npos || secondQuote == string::npos || secondQuote <= firstQuote) {
+        return false;
+    }
+
+    // pull out name between quotes
+    studentName = command.substr(firstQuote + 1, secondQuote - firstQuote - 1);
+
+    // everything after quoted name
+    string remaining = command.substr(secondQuote + 1);
+    stringstream lineStream(remaining);
+
+    int classCount;
+
+    // read ufid, residence location, and class count
+    if (!(lineStream >> ufid >> residenceLocation >> classCount)) {
+        return false;
+    }
+
+    // make sure class count is valid
+    if (!ValidClassCount(classCount)) {
+        return false;
+    }
+
+    // read class codes
+    string currentCode;
+    while (lineStream >> currentCode) {
+        classCodes.push_back(currentCode);
+    }
+
+    // make sure # of class codes matches count given
+    if (classCodes.size() != static_cast<size_t>(classCount)) {
+        return false;
+    }
+
+    return true;
+}
+
 bool CampusCompass::ParseCommand(const string &command) {
+    // temp validation check for insert for now
+    if (command.rfind("insert ", 0) == 0) {
+        string studentName;
+        string ufid;
+        int residenceLocation;
+        vector<string> classCodes;
+
+        bool parsed = ParseInsertCommand(command, studentName, ufid, residenceLocation, classCodes);
+
+        if (!parsed) {
+            return false;
+        }
+
+        if (!ValidName(studentName) || !ValidUFID(ufid)) {
+            return false;
+        }
+
+        for (const string& code : classCodes) {
+            if (!ValidClassCode(code)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // come back later
     bool is_valid = true;
 
