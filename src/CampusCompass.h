@@ -48,6 +48,9 @@ private:
     // load course data from classes.csv
     bool LoadCourseData(const string& filename);
 
+    // print counts to make sure csv loading worked
+    void PrintLoadSummary() const;
+
     // make sure ufid is 8 digits
     bool ValidUFID(const string& ufid) const;
 
