@@ -325,6 +325,45 @@ bool CampusCompass::ParseCommand(const string &command) {
         return true;
     }
 
+    // handle remove command
+    if (command.rfind("remove ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        string ufid;
+        string extra;
+
+        // read command word and ufid
+        if (!(lineStream >> action >> ufid)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // remove should only have one argument after command word
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // ufid format has to be valid
+        if (!ValidUFID(ufid)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // student has to exist
+        auto it = studentRecords.find(ufid);
+        if (it == studentRecords.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // erase student record
+        studentRecords.erase(it);
+
+        cout << "successful" << endl;
+        return true;
+    }
+
     // invalid command rn
     cout << "unsuccessful" << endl;
     return false;
