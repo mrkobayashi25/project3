@@ -364,6 +364,64 @@ bool CampusCompass::ParseCommand(const string &command) {
         return true;
     }
 
+    // dropClass command
+    if (command.rfind("dropClass ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        string ufid;
+        string classCode;
+        string extra;
+
+        // read command word, ufid, and class code
+        if (!(lineStream >> action >> ufid >> classCode)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // dropClass should only have two arguments
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // ufid format validity
+        if (!ValidUFID(ufid)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // class code format has to be valid and exist
+        if (!ValidClassCode(classCode) || classes.find(classCode) == classes.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // student has to exist
+        auto studentIt = studentRecords.find(ufid);
+        if (studentIt == studentRecords.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // student has to currently have that class
+        auto classIt = studentIt->second.schedule.find(classCode);
+        if (classIt == studentIt->second.schedule.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // remove class from students schedule
+        studentIt->second.schedule.erase(classIt);
+
+        // if student now has zero classes, remove student too
+        if (studentIt->second.schedule.empty()) {
+            studentRecords.erase(studentIt);
+        }
+
+        cout << "successful" << endl;
+        return true;
+    }
+
     // invalid command rn
     cout << "unsuccessful" << endl;
     return false;
