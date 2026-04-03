@@ -422,6 +422,72 @@ bool CampusCompass::ParseCommand(const string &command) {
         return true;
     }
 
+    // replaceClass command
+    if (command.rfind("replaceClass ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        string ufid;
+        string oldClassCode;
+        string newClassCode;
+        string extra;
+
+        // read command word, ufid, old class, and new class
+        if (!(lineStream >> action >> ufid >> oldClassCode >> newClassCode)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // replaceClass should only have three arguments
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // ufid format has to be valid
+        if (!ValidUFID(ufid)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // old class code should at least have valid format
+        if (!ValidClassCode(oldClassCode)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // new class code has to be valid and exist in loaded classes
+        if (!ValidClassCode(newClassCode) || classes.find(newClassCode) == classes.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // student has to exist
+        auto studentIt = studentRecords.find(ufid);
+        if (studentIt == studentRecords.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // student has to actually have the old class first
+        if (studentIt->second.schedule.find(oldClassCode) == studentIt->second.schedule.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // cant replace with a class they already have
+        if (studentIt->second.schedule.find(newClassCode) != studentIt->second.schedule.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // swap old class out for new class
+        studentIt->second.schedule.erase(oldClassCode);
+        studentIt->second.schedule.insert(newClassCode);
+
+        cout << "successful" << endl;
+        return true;
+    }
+
     // invalid command rn
     cout << "unsuccessful" << endl;
     return false;
