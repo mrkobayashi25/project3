@@ -8,7 +8,7 @@
 using namespace std;
 
 CampusCompass::CampusCompass() {
-    // come back later
+
 }
 
 bool CampusCompass::ParseCSV(const string &edges_filepath, const string &classes_filepath) {
@@ -266,7 +266,6 @@ bool CampusCompass::ParseInsertCommand(const string& command, string& studentNam
 }
 
 bool CampusCompass::ParseCommand(const string &command) {
-    // only doing insert rn
     if (command.rfind("insert ", 0) == 0) {
         string studentName;
         string ufid;
@@ -318,14 +317,14 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // store student record
+        // store student
         studentRecords[ufid] = newStudent;
 
         cout << "successful" << endl;
         return true;
     }
 
-    // handle remove command
+    // handle remove
     if (command.rfind("remove ", 0) == 0) {
         stringstream lineStream(command);
         string action;
@@ -364,7 +363,7 @@ bool CampusCompass::ParseCommand(const string &command) {
         return true;
     }
 
-    // dropClass command
+    // dropClass
     if (command.rfind("dropClass ", 0) == 0) {
         stringstream lineStream(command);
         string action;
@@ -378,7 +377,7 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // dropClass should only have two arguments
+        // dropClass should have two arguments
         if (lineStream >> extra) {
             cout << "unsuccessful" << endl;
             return false;
@@ -403,17 +402,17 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // student has to currently have that class
+        // student has to currently have class
         auto classIt = studentIt->second.schedule.find(classCode);
         if (classIt == studentIt->second.schedule.end()) {
             cout << "unsuccessful" << endl;
             return false;
         }
 
-        // remove class from students schedule
+        // remove class from schedule
         studentIt->second.schedule.erase(classIt);
 
-        // if student now has zero classes, remove student too
+        // if student has zero classes, remove student
         if (studentIt->second.schedule.empty()) {
             studentRecords.erase(studentIt);
         }
@@ -422,7 +421,7 @@ bool CampusCompass::ParseCommand(const string &command) {
         return true;
     }
 
-    // replaceClass command
+    // replaceClass
     if (command.rfind("replaceClass ", 0) == 0) {
         stringstream lineStream(command);
         string action;
@@ -488,7 +487,72 @@ bool CampusCompass::ParseCommand(const string &command) {
         return true;
     }
 
-    // invalid command rn
+    // removeClass command
+    if (command.rfind("removeClass ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        string classCode;
+        string extra;
+
+        // read command word and class code
+        if (!(lineStream >> action >> classCode)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // removeClass should only have one argument
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // class code format has to be valid
+        if (!ValidClassCode(classCode)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // class has to exist in loaded classes
+        if (classes.find(classCode) == classes.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        int affectedStudents = 0;
+        vector<string> studentsToRemove;
+
+        // go through every student and remove class if they have it
+        for (auto& studentPair : studentRecords) {
+            StudentInfo& currentStudent = studentPair.second;
+
+            auto classIt = currentStudent.schedule.find(classCode);
+            if (classIt != currentStudent.schedule.end()) {
+                currentStudent.schedule.erase(classIt);
+                affectedStudents++;
+
+                // if student has zero classes, remove them after loop
+                if (currentStudent.schedule.empty()) {
+                    studentsToRemove.push_back(studentPair.first);
+                }
+            }
+        }
+
+        // if nobody had the class then this fails
+        if (affectedStudents == 0) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // remove students left with no classes
+        for (const string& ufid : studentsToRemove) {
+            studentRecords.erase(ufid);
+        }
+
+        cout << affectedStudents << endl;
+        return true;
+    }
+
+
     cout << "unsuccessful" << endl;
     return false;
 }

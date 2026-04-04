@@ -5,21 +5,27 @@
 using namespace std;
 
 int main() {
-    // initialize your main project object
+    // controller object for entire project
+    // graph, students, classes, and command logic
     CampusCompass compass;
 
-    // ingest CSV data
+    // load needed csv data before commands are run per requirements
     compass.ParseCSV("data/edges.csv", "data/classes.csv");
 
-    // the below is example code for parsing commandline input
+    // first input line is number of commands that follow
     int no_of_lines;
     string command;
+
     cin >> no_of_lines;
-    cin.ignore(); // ignore newline that first cin left over
+    cin.ignore(); // removes leftover nl after reading int
+
+    // read specified amnt of full command lines
     for (int i = 0; i < no_of_lines; i++) {
         getline(cin, command);
 
-        // parse your commands however you see fit
+        // send raw full command line to parser
         compass.ParseCommand(command);
     }
+
+    return 0;
 }
