@@ -21,13 +21,11 @@ bool CampusCompass::ParseCSV(const string &edges_filepath, const string &classes
     bool loadedEdges = LoadEdgeData(edges_filepath);
     bool loadedCourses = LoadCourseData(classes_filepath);
 
-    // if either one fails, return false
+    // if either fails return false
     if (!loadedEdges || !loadedCourses) {
         return false;
     }
 
-    // print temp counts to make sure it loaded right
-    PrintLoadSummary();
     return true;
 }
 
@@ -67,10 +65,21 @@ bool CampusCompass::LoadEdgeData(const string& filename) {
             continue;
         }
 
-        // convert strings
-        int location1 = stoi(location1Str);
-        int location2 = stoi(location2Str);
-        int travelTime = stoi(travelTimeStr);
+        int location1;
+        int location2;
+        int travelTime;
+
+        // help for any invalid fields
+        try {
+            location1 = stoi(location1Str);
+            location2 = stoi(location2Str);
+            travelTime = stoi(travelTimeStr);
+        }
+
+        // dont crash, just skip
+        catch(...) {
+            continue;
+        }
 
         // edge from first location to second
         CampusEdge edgeToSecond;
@@ -127,9 +136,20 @@ bool CampusCompass::LoadCourseData(const string& filename) {
             continue;
         }
 
+        int classLocation;
+
+        // incase of invalid fields just skipp
+        try {
+            classLocation = stoi(classLocationStr);
+        }
+
+        catch(...) {
+            continue;
+        }
+
         // make a course object for current row
         CourseInfo currentCourse;
-        currentCourse.classLocation = stoi(classLocationStr);
+        currentCourse.classLocation = classLocation;
         currentCourse.startTime = startTime;
         currentCourse.endTime = endTime;
 
@@ -151,11 +171,6 @@ void CampusCompass::PrintLoadSummary() const {
 
     // divide by 2
     edgeCount /= 2;
-
-    // temp debug output for csv loading
-    cout << "locations loaded: " << campusGraph.size() << endl;
-    cout << "edges loaded: " << edgeCount << endl;
-    cout << "class codes loaded: " << classes.size() << endl;
 }
 
 bool CampusCompass::ValidUFID(const string& ufid) const {
@@ -214,28 +229,40 @@ bool CampusCompass::ValidClassCode(const string& code) const {
 }
 
 bool CampusCompass::ValidClassCount(int count) const {
-    // class count has to be between 1 and 6
     return count >= 1 && count <= 6;
 }
 
 bool CampusCompass::ParseInsertCommand(const string& command, string& studentName, string& ufid, int& residenceLocation,
                                        vector<string>& classCodes) const {
-    // clear old class codes first
     classCodes.clear();
+    studentName.clear();
+    ufid.clear();
 
-    // find quoted name
-    size_t firstQuote = command.find('"');
-    size_t secondQuote = command.find('"', firstQuote + 1);
-
-    // if quotes are missing or messed up, fail
-    if (firstQuote == string::npos || secondQuote == string::npos || secondQuote <= firstQuote) {
+    // insert must begin w insert
+    if (command.rfind("insert ", 0) != 0) {
         return false;
     }
 
-    // pull out name between quotes
+    // find quoted name
+    size_t firstQuote = command.find('"');
+    if (firstQuote == string::npos) {
+        return false;
+    }
+
+    size_t secondQuote = command.find('"', firstQuote + 1);
+    if (secondQuote == string::npos || secondQuote <= firstQuote) {
+        return false;
+    }
+
+    // no extra quotes after quoted name
+    if (command.find('"', secondQuote + 1) != string::npos) {
+        return false;
+    }
+
+    // pull name
     studentName = command.substr(firstQuote + 1, secondQuote - firstQuote - 1);
 
-    // everything after quoted name
+    // everything after name
     string remaining = command.substr(secondQuote + 1);
     stringstream lineStream(remaining);
 
@@ -436,7 +463,7 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // replaceClass should only have three arguments
+        // replaceClass should just have three arguments
         if (lineStream >> extra) {
             cout << "unsuccessful" << endl;
             return false;
@@ -454,7 +481,7 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // new class code has to be valid and exist in loaded classes
+        // new class code has to be valid and exist
         if (!ValidClassCode(newClassCode) || classes.find(newClassCode) == classes.end()) {
             cout << "unsuccessful" << endl;
             return false;
@@ -479,7 +506,7 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // swap old class out for new class
+        // swap old class for new class
         studentIt->second.schedule.erase(oldClassCode);
         studentIt->second.schedule.insert(newClassCode);
 
@@ -500,7 +527,7 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // removeClass should only have one argument
+        // removeClass should have one argument
         if (lineStream >> extra) {
             cout << "unsuccessful" << endl;
             return false;
@@ -512,7 +539,7 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // class has to exist in loaded classes
+        // class has to exist
         if (classes.find(classCode) == classes.end()) {
             cout << "unsuccessful" << endl;
             return false;
@@ -530,14 +557,14 @@ bool CampusCompass::ParseCommand(const string &command) {
                 currentStudent.schedule.erase(classIt);
                 affectedStudents++;
 
-                // if student has zero classes, remove them after loop
+                // if student has zero classes remove after loop
                 if (currentStudent.schedule.empty()) {
                     studentsToRemove.push_back(studentPair.first);
                 }
             }
         }
 
-        // if nobody had the class then this fails
+        // if nobody had class then this fails
         if (affectedStudents == 0) {
             cout << "unsuccessful" << endl;
             return false;
@@ -551,7 +578,6 @@ bool CampusCompass::ParseCommand(const string &command) {
         cout << affectedStudents << endl;
         return true;
     }
-
 
     cout << "unsuccessful" << endl;
     return false;
