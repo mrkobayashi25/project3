@@ -292,7 +292,63 @@ bool CampusCompass::ParseInsertCommand(const string& command, string& studentNam
     return true;
 }
 
+bool CampusCompass::ToggleClosure(int locationA, int locationB) {
+    bool foundForward = false;
+    bool foundBackward = false;
+
+    // find edge a to b then toggle
+    auto graphItA = campusGraph.find(locationA);
+    if (graphItA != campusGraph.end()) {
+        for (auto& edge : graphItA->second) {
+            if (edge.adjacentId == locationB) {
+                edge.available = !edge.available;
+                foundForward = true;
+                break;
+            }
+        }
+    }
+
+    // find edge b to a then toggle
+    auto graphItB = campusGraph.find(locationB);
+    if (graphItB != campusGraph.end()) {
+        for (auto& edge : graphItB->second) {
+            if (edge.adjacentId == locationA) {
+                edge.available = !edge.available;
+                foundBackward = true;
+                break;
+            }
+        }
+    }
+
+    return foundForward && foundBackward;
+}
+
+string CampusCompass::EdgeStatus(int locationA, int locationB) const {
+    auto graphIt = campusGraph.find(locationA);
+
+    // if start location dne, edge dne
+    if (graphIt == campusGraph.end()) {
+        return "DNE";
+    }
+
+    // search edge a to b
+    for (const auto& edge : graphIt->second) {
+        if (edge.adjacentId == locationB) {
+            if (edge.available) {
+                return "open";
+            }
+            return "closed";
+        }
+    }
+    return "DNE";
+}
+
 bool CampusCompass::ParseCommand(const string &command) {
+    if (command.empty()) {
+        cout << "unsuccessful" << endl;
+        return false;
+    }
+
     if (command.rfind("insert ", 0) == 0) {
         string studentName;
         string ufid;
@@ -463,7 +519,7 @@ bool CampusCompass::ParseCommand(const string &command) {
             return false;
         }
 
-        // replaceClass should just have three arguments
+        // replaceClass should have three arguments
         if (lineStream >> extra) {
             cout << "unsuccessful" << endl;
             return false;
@@ -548,7 +604,7 @@ bool CampusCompass::ParseCommand(const string &command) {
         int affectedStudents = 0;
         vector<string> studentsToRemove;
 
-        // go through every student and remove class if they have it
+        // go through every student and remove class if they have
         for (auto& studentPair : studentRecords) {
             StudentInfo& currentStudent = studentPair.second;
 
@@ -564,13 +620,13 @@ bool CampusCompass::ParseCommand(const string &command) {
             }
         }
 
-        // if nobody had class then this fails
+        // if nobody had class then fail
         if (affectedStudents == 0) {
             cout << "unsuccessful" << endl;
             return false;
         }
 
-        // remove students left with no classes
+        // remove students with no classes
         for (const string& ufid : studentsToRemove) {
             studentRecords.erase(ufid);
         }
@@ -578,6 +634,79 @@ bool CampusCompass::ParseCommand(const string &command) {
         cout << affectedStudents << endl;
         return true;
     }
+
+    // toggleEdgesClosure
+    if (command.rfind("toggleEdgesClosure ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        int edgeCount;
+
+        //read word and # of edge to toggle
+        if (!(lineStream >> action >> edgeCount)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // need positive edge count
+        if (edgeCount <= 0) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        vector<pair<int, int>> edgesToToggle;
+
+        // read pair of location ids for edgeCount
+        for (int i = 0; i < edgeCount; i++) {
+            int locationA;
+            int locationB;
+
+            if (!(lineStream >> locationA >> locationB)) {
+                cout << "unsuccessful" << endl;
+                return false;
+            }
+
+            edgesToToggle.push_back({locationA, locationB});
+        }
+        
+        // no extra input after expected
+        string extra;
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // toggle listed edges
+        for (const auto& edgePair : edgesToToggle) {
+            ToggleClosure(edgePair.first, edgePair.second);
+        }
+
+        cout << "successful" << endl;
+        return true;
+    }
+
+    // checkEdgeStatus
+    if (command.rfind("checkEdgeStatus ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        int locationA;
+        int locationB;
+        string extra;
+
+        // read location ids and command
+        if (!(lineStream >> action >> locationA >> locationB)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // only two ids after command
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        cout << EdgeStatus(locationA, locationB) << endl;
+        return true;
+    }   
 
     cout << "unsuccessful" << endl;
     return false;
