@@ -71,7 +71,7 @@ private:
     // remove entire student record by ufid
     bool RemoveStudentRecord(const string& ufid);
 
-    // drop a class from a students schedule
+    // drop class from student schedule
     bool DropStudentClass(const string& ufid, const string& classCode);
 
     // replace a class in a students schedule with another
@@ -88,7 +88,7 @@ private:
     string EdgeStatus(int locationA, int locationB) const;
 
     // check if one location can reach another with available edges
-    bool CanReach(int startLocation, int endLocation) const;
+    bool IsConnected(int startLocation, int endLocation) const;
 
     // find shortest path and total travel time between two locations
     pair<int, vector<int>> Dijkstra(int startLocation, int endLocation) const;
@@ -104,6 +104,9 @@ private:
 
     // get final zone cost for one student
     int GetStudentZoneCost(const StudentInfo& student) const;
+
+    // parse connect using current open edges
+    bool IsConnectedCommand(int startLocation, int endLocation) const;
 
 public:
     CampusCompass();

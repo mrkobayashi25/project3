@@ -4,6 +4,8 @@
 #include <sstream>
 #include <iostream>
 #include <cctype>
+#include <queue>
+#include <unordered_set>
 
 using namespace std;
 
@@ -341,6 +343,55 @@ string CampusCompass::EdgeStatus(int locationA, int locationB) const {
         }
     }
     return "DNE";
+}
+
+bool CampusCompass::IsConnected(int startLocation, int endLocation) const {
+    // if same location = reachable
+    if (startLocation == endLocation) {
+        return true;
+    }
+
+    // start / end should exist in graph
+    if (campusGraph.find(startLocation) == campusGraph.end() ||
+        campusGraph.find(endLocation) == campusGraph.end()) {
+        return false;
+    }
+
+    queue<int> toVisit;
+    unordered_set<int> visited;
+
+    toVisit.push(startLocation);
+    visited.insert(startLocation);
+
+    while (!toVisit.empty()) {
+        int current = toVisit.front();
+        toVisit.pop();
+
+        auto graphIt = campusGraph.find(current);
+        if (graphIt == campusGraph.end()) {
+            continue;
+        }
+
+        for (const auto& edge : graphIt->second) {
+            // ignore closed edges
+            if (!edge.available) {
+                continue;
+            }
+
+            int nextLocation = edge.adjacentId;
+
+            if (nextLocation == endLocation) {
+                return true;
+            }
+
+            if (visited.find(nextLocation) == visited.end()) {
+                visited.insert(nextLocation);
+                toVisit.push(nextLocation);
+            }
+        }
+    }
+
+    return false;
 }
 
 bool CampusCompass::ParseCommand(const string &command) {
@@ -706,7 +757,37 @@ bool CampusCompass::ParseCommand(const string &command) {
 
         cout << EdgeStatus(locationA, locationB) << endl;
         return true;
-    }   
+    }
+
+    // isConnected
+    if (command.rfind("isConnected ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        int locationA;
+        int locationB;
+        string extra;
+
+        // read command and two location ids
+        if (!(lineStream >> action >> locationA >> locationB)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // should not have extra input
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        if (IsConnected(locationA, locationB)) {
+            cout << "successful" << endl;
+        }
+        else {
+            cout << "unsuccessful" << endl;
+        }
+
+        return true;
+    }
 
     cout << "unsuccessful" << endl;
     return false;
