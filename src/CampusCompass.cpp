@@ -6,6 +6,9 @@
 #include <cctype>
 #include <queue>
 #include <unordered_set>
+#include <limits>
+#include <algorithm>
+#include <functional>
 
 using namespace std;
 
@@ -392,6 +395,107 @@ bool CampusCompass::IsConnected(int startLocation, int endLocation) const {
     }
 
     return false;
+}
+
+bool CampusCompass::DijkstraShortestPath(int startLocation, int endLocation, int& shortestDistance,
+                                         vector<int>& shortestPath) const {
+    shortestPath.clear();
+    shortestDistance = -1;
+
+    // both locations have to exist in graph
+    if (campusGraph.find(startLocation) == campusGraph.end() || campusGraph.find(endLocation) == campusGraph.end()) {
+        return false;
+    }
+
+    // if theres same start and end
+    if (startLocation == endLocation) {
+        shortestDistance = 0;
+        shortestPath.push_back(startLocation);
+        return true;
+    }
+
+    // distance to each node
+    unordered_map<int, int> distances;
+
+    // rebuild shortest path later
+    unordered_map<int, int> previous;
+
+    // all known graph vertices to infinity
+    for (const auto& graphPair : campusGraph) {
+        distances[graphPair.first] = numeric_limits<int>::max();
+    }
+
+    distances[startLocation] = 0;
+
+    // min-heap storing
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> minHeap;
+    minHeap.push({0, startLocation});
+
+    while (!minHeap.empty()) {
+        int currentDistance = minHeap.top().first;
+        int currentLocation = minHeap.top().second;
+        minHeap.pop();
+
+        // skip old heap entries
+        if (currentDistance > distances[currentLocation]) {
+            continue;
+        }
+
+        // if destination is reache early, can stop early
+        if (currentLocation == endLocation) {
+            break;
+        }
+
+        auto graphIt = campusGraph.find(currentLocation);
+        if (graphIt == campusGraph.end()) {
+            continue;
+        }
+
+        for (const auto& edge : graphIt->second) {
+            // only travel on open edges
+            if (!edge.available) {
+                continue;
+            }
+
+            int nextLocation = edge.adjacentId;
+            int newDistance = currentDistance + edge.travelTime;
+
+            // relax edge if we found a shorter route
+            if (newDistance < distances[nextLocation]) {
+                distances[nextLocation] = newDistance;
+                previous[nextLocation] = currentLocation;
+                minHeap.push({newDistance, nextLocation});
+            }
+        }
+    }
+
+    // if destination stayed at infinity its unreachable
+    if (distances[endLocation] == numeric_limits<int>::max()) {
+        return false;
+    }
+
+    shortestDistance = distances[endLocation];
+
+    // rebuild path by walking backward from endLocation to startLocation
+    int current = endLocation;
+    while (current != startLocation) {
+        shortestPath.push_back(current);
+
+        // safety check in case predecessor chain is broke
+        if (previous.find(current) == previous.end()) {
+            shortestPath.clear();
+            shortestDistance = -1;
+            return false;
+        }
+
+        current = previous.at(current);
+    }
+
+    // add the start node, then reverse so path goes start to end
+    shortestPath.push_back(startLocation);
+    reverse(shortestPath.begin(), shortestPath.end());
+
+    return true;
 }
 
 bool CampusCompass::ParseCommand(const string &command) {

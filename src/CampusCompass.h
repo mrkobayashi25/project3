@@ -90,6 +90,9 @@ private:
     // check if one location can reach another with available edges
     bool IsConnected(int startLocation, int endLocation) const;
 
+    // find shortest route only using open edges
+    bool DijkstraShortestPath(int startLocation, int endLocation, int& shortestDistance, vector<int>& shortestPath) const;
+
     // find shortest path and total travel time between two locations
     pair<int, vector<int>> Dijkstra(int startLocation, int endLocation) const;
 
