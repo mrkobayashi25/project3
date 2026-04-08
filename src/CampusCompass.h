@@ -93,6 +93,9 @@ private:
     // find shortest route only using open edges
     bool DijkstraShortestPath(int startLocation, int endLocation, int& shortestDistance, vector<int>& shortestPath) const;
 
+    // shortest distance from home to class for a student
+    void PrintShortestEdges(const string& ufid) const;
+
     // find shortest path and total travel time between two locations
     pair<int, vector<int>> Dijkstra(int startLocation, int endLocation) const;
 

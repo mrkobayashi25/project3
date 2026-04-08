@@ -498,6 +498,54 @@ bool CampusCompass::DijkstraShortestPath(int startLocation, int endLocation, int
     return true;
 }
 
+void CampusCompass::PrintShortestEdges(const string& ufid) const {
+    // ufid must be valid format
+    if (!ValidUFID(ufid)) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    // student has to exist
+    auto studentIt = studentRecords.find(ufid);
+    if (studentIt == studentRecords.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    const StudentInfo& currentStudent = studentIt->second;
+
+    // copy class codes so ordering is lexicographic
+    vector<string> sortedClassCodes(currentStudent.schedule.begin(), currentStudent.schedule.end());
+    sort(sortedClassCodes.begin(), sortedClassCodes.end());
+
+    for (const string& classCode : sortedClassCodes) {
+        auto classIt = classes.find(classCode);
+
+        // just in case a class somehow missing from map
+        if (classIt == classes.end()) {
+            cout << classCode << " -1" << endl;
+            continue;
+        }
+
+        int shortestDistance;
+        vector<int> shortestPath;
+
+        bool reachable = DijkstraShortestPath(
+            currentStudent.residenceLocation,
+            classIt->second.classLocation,
+            shortestDistance,
+            shortestPath
+        );
+
+        if (reachable) {
+            cout << classCode << " " << shortestDistance << endl;
+        }
+        else {
+            cout << classCode << " -1" << endl;
+        }
+    }
+}
+
 bool CampusCompass::ParseCommand(const string &command) {
     if (command.empty()) {
         cout << "unsuccessful" << endl;
@@ -890,6 +938,35 @@ bool CampusCompass::ParseCommand(const string &command) {
             cout << "unsuccessful" << endl;
         }
 
+        return true;
+    }
+
+// printShortestEdges
+    if (command.rfind("printShortestEdges ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        string ufid;
+        string extra;
+
+        // read command and ufid
+        if (!(lineStream >> action >> ufid)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // should only have one argument after command
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // match same style / fail on bad ufid format or missing student
+        if (!ValidUFID(ufid) || studentRecords.find(ufid) == studentRecords.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        PrintShortestEdges(ufid);
         return true;
     }
 
