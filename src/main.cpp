@@ -1,4 +1,5 @@
 #include <iostream>
+#include <limits>
 
 #include "CampusCompass.h"
 
@@ -17,13 +18,15 @@ int main() {
     string command;
 
     cin >> no_of_lines;
-    cin.ignore(); // removes leftover nl after reading int
+
+    // only read int command #
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
 
     // read specified amnt of full command lines
     for (int i = 0; i < no_of_lines; i++) {
         getline(cin, command);
 
-        // send raw full command line to parser
+        // send full command line to parser
         compass.ParseCommand(command);
     }
 

@@ -514,6 +514,9 @@ void CampusCompass::PrintShortestEdges(const string& ufid) const {
 
     const StudentInfo& currentStudent = studentIt->second;
 
+    // print header before class time
+    cout << "Time For Shortest Edges: " << currentStudent.studentName << endl;
+
     // copy class codes so ordering is lexicographic
     vector<string> sortedClassCodes(currentStudent.schedule.begin(), currentStudent.schedule.end());
     sort(sortedClassCodes.begin(), sortedClassCodes.end());
@@ -523,7 +526,7 @@ void CampusCompass::PrintShortestEdges(const string& ufid) const {
 
         // just in case a class somehow missing from map
         if (classIt == classes.end()) {
-            cout << classCode << " -1" << endl;
+            cout << classCode << ": -1" << endl;
             continue;
         }
 
@@ -538,10 +541,10 @@ void CampusCompass::PrintShortestEdges(const string& ufid) const {
         );
 
         if (reachable) {
-            cout << classCode << " " << shortestDistance << endl;
+            cout << classCode << ": " << shortestDistance << endl;
         }
         else {
-            cout << classCode << " -1" << endl;
+            cout << classCode << ": -1" << endl;
         }
     }
 }
@@ -807,36 +810,36 @@ bool CampusCompass::ParseCommand(const string &command) {
         int affectedStudents = 0;
         vector<string> studentsToRemove;
 
-        // go through every student and remove class if they have
-        for (auto& studentPair : studentRecords) {
-            StudentInfo& currentStudent = studentPair.second;
+    // go through every student and remove class if they have
+    for (auto& studentPair : studentRecords) {
+        StudentInfo& currentStudent = studentPair.second;
 
-            auto classIt = currentStudent.schedule.find(classCode);
-            if (classIt != currentStudent.schedule.end()) {
-                currentStudent.schedule.erase(classIt);
-                affectedStudents++;
+        auto classIt = currentStudent.schedule.find(classCode);
+        if (classIt != currentStudent.schedule.end()) {
+            currentStudent.schedule.erase(classIt);
+            affectedStudents++;
 
-                // if student has zero classes remove after loop
-                if (currentStudent.schedule.empty()) {
-                    studentsToRemove.push_back(studentPair.first);
-                }
+            // if student has zero classes remove after loop
+            if (currentStudent.schedule.empty()) {
+                studentsToRemove.push_back(studentPair.first);
             }
         }
-
-        // if nobody had class then fail
-        if (affectedStudents == 0) {
-            cout << "unsuccessful" << endl;
-            return false;
-        }
-
-        // remove students with no classes
-        for (const string& ufid : studentsToRemove) {
-            studentRecords.erase(ufid);
-        }
-
-        cout << affectedStudents << endl;
-        return true;
     }
+
+    // if nobody had class then fail
+    if (affectedStudents == 0) {
+        cout << "unsuccessful" << endl;
+        return false;
+    }
+
+    // remove students with no classes
+    for (const string& ufid : studentsToRemove) {
+        studentRecords.erase(ufid);
+    }
+
+    cout << affectedStudents << endl;
+    return true;
+}
 
     // toggleEdgesClosure
     if (command.rfind("toggleEdgesClosure ", 0) == 0) {
@@ -881,7 +884,7 @@ bool CampusCompass::ParseCommand(const string &command) {
         // toggle listed edges
         for (const auto& edgePair : edgesToToggle) {
             ToggleClosure(edgePair.first, edgePair.second);
-        }
+            }
 
         cout << "successful" << endl;
         return true;
