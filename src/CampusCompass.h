@@ -64,8 +64,7 @@ private:
     bool ValidClassCount(int count) const;
 
     // parse insert command separately bc name is in quotes
-    bool ParseInsertCommand(const string& command, string& studentName,
-                            string& ufid, int& residenceLocation,
+    bool ParseInsertCommand(const string& command, string& studentName, string& ufid, int& residenceLocation,
                             vector<string>& classCodes) const;
 
     // remove entire student record by ufid
@@ -93,7 +92,7 @@ private:
     // find shortest route only using open edges
     bool DijkstraShortestPath(int startLocation, int endLocation, int& shortestDistance, vector<int>& shortestPath) const;
 
-    // shortest distance from home to class for a student
+    // shortest distance from home to class for student
     void PrintShortestEdges(const string& ufid) const;
 
     // find shortest path and total travel time between two locations

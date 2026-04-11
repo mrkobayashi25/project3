@@ -491,11 +491,73 @@ bool CampusCompass::DijkstraShortestPath(int startLocation, int endLocation, int
         current = previous.at(current);
     }
 
-    // add the start node, then reverse so path goes start to end
+    // add the start node then reverse so path goes start to end
     shortestPath.push_back(startLocation);
     reverse(shortestPath.begin(), shortestPath.end());
 
     return true;
+}
+
+set<int> CampusCompass::CollectZoneVertices(const StudentInfo& student) const {
+    set<int> zoneVertices;
+
+    // include residence
+    zoneVertices.insert(student.residenceLocation);
+
+    // for each class get shortest path and collect vertices
+    for (const string& classCode : student.schedule) {
+        auto classIt = classes.find(classCode);
+
+        if (classIt == classes.end()) {
+            continue;
+        }
+
+        int shortestDistance;
+        vector<int> shortestPath;
+
+        bool reachable = DijkstraShortestPath(
+            student.residenceLocation,
+            classIt->second.classLocation,
+            shortestDistance,
+            shortestPath
+        );
+
+        // collect vertices from shortest path
+        if (reachable) {
+            for (int vertex : shortestPath) {
+                zoneVertices.insert(vertex);
+            }
+        }
+    }
+
+    return zoneVertices;
+}
+
+vector<tuple<int, int, int>> CampusCompass::BuildZoneSubgraph(const set<int>& vertices) const {
+    vector<tuple<int, int, int>> edges;
+
+    // go through every vertex in the zone
+    for (int u : vertices) {
+        auto graphIt = campusGraph.find(u);
+        if (graphIt == campusGraph.end()) {
+            continue;
+        }
+
+        for (const auto& edge : graphIt->second) {
+            int v = edge.adjacentId;
+
+            // only include edges where  endpoints are in zone and edge is open
+            if (edge.available && vertices.find(v) != vertices.end()) {
+
+                // avoid repeat edge
+                if (u < v) {
+                    edges.push_back(make_tuple(u, v, edge.travelTime));
+                }
+            }
+        }
+    }
+
+    return edges;
 }
 
 void CampusCompass::PrintShortestEdges(const string& ufid) const {
