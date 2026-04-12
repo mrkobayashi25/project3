@@ -95,6 +95,9 @@ private:
     // shortest distance from home to class for student
     void PrintShortestEdges(const string& ufid) const;
 
+    // print student zone cost
+    void PrintStudentZone(const string& ufid) const;
+
     // find shortest path and total travel time between two locations
     pair<int, vector<int>> Dijkstra(int startLocation, int endLocation) const;
 
@@ -105,7 +108,7 @@ private:
     vector<tuple<int, int, int>> BuildZoneSubgraph(const set<int>& vertices) const;
 
     // get mst cost of the student zone subgraph
-    int MSTCost(const set<int>& vertices, const vector<tuple<int, int, int>>& edges) const;
+    int ComputeMSTCost(const set<int>& vertices, const vector<tuple<int, int, int>>& edges) const;
 
     // get final zone cost for one student
     int GetStudentZoneCost(const StudentInfo& student) const;

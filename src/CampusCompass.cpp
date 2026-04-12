@@ -560,6 +560,59 @@ vector<tuple<int, int, int>> CampusCompass::BuildZoneSubgraph(const set<int>& ve
     return edges;
 }
 
+int CampusCompass::ComputeMSTCost(const set<int>& vertices, const vector<tuple<int, int, int>>& edges) const {
+    // make adjacent list for  subgraph
+    unordered_map<int, vector<pair<int, int>>> subgraphAdj;
+
+    for (const auto& edgeTuple : edges) {
+        int u = get<0>(edgeTuple);
+        int v = get<1>(edgeTuple);
+        int weight = get<2>(edgeTuple);
+
+        subgraphAdj[u].push_back({v, weight});
+        subgraphAdj[v].push_back({u, weight});
+    }
+
+    // if no vertices somehow - cost should be 0
+    if (vertices.empty()) {
+        return 0;
+    }
+
+    unordered_set<int> visited;
+
+    priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> minHeap;
+
+    int totalCost = 0;
+
+    // start from any vertex in zone
+    int startVertex = *vertices.begin();
+    minHeap.push({0, startVertex});
+
+    while (!minHeap.empty()) {
+        int currentCost = minHeap.top().first;
+        int currentVertex = minHeap.top().second;
+        minHeap.pop();
+
+        if (visited.find(currentVertex) != visited.end()) {
+            continue;
+        }
+
+        visited.insert(currentVertex);
+        totalCost += currentCost;
+
+        for (const auto& neighborPair : subgraphAdj[currentVertex]) {
+            int neighbor = neighborPair.first;
+            int weight = neighborPair.second;
+
+            if (visited.find(neighbor) == visited.end()) {
+                minHeap.push({weight, neighbor});
+            }
+        }
+    }
+
+    return totalCost;
+}
+
 void CampusCompass::PrintShortestEdges(const string& ufid) const {
     // ufid must be valid format
     if (!ValidUFID(ufid)) {
@@ -609,6 +662,36 @@ void CampusCompass::PrintShortestEdges(const string& ufid) const {
             cout << classCode << ": -1" << endl;
         }
     }
+}
+
+void CampusCompass::PrintStudentZone(const string& ufid) const {
+    // ufid must be valid format
+    if (!ValidUFID(ufid)) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    // student must exist
+    auto studentIt = studentRecords.find(ufid);
+    if (studentIt == studentRecords.end()) {
+        cout << "unsuccessful" << endl;
+        return;
+    }
+
+    const StudentInfo& currentStudent = studentIt->second;
+
+    // collect vertices used in any shortest path
+    set<int> zoneVertices = CollectZoneVertices(currentStudent);
+
+    // make subgraph edges using only given vertices
+    vector<tuple<int, int, int>> zoneEdges = BuildZoneSubgraph(zoneVertices);
+
+    // compute MST cost of that subgraph
+    int totalCost = ComputeMSTCost(zoneVertices, zoneEdges);
+
+    // print exact format
+    cout << "Student Zone Cost For " << currentStudent.studentName
+         << ": " << totalCost << endl;
 }
 
 bool CampusCompass::ParseCommand(const string &command) {
@@ -1032,6 +1115,34 @@ bool CampusCompass::ParseCommand(const string &command) {
         }
 
         PrintShortestEdges(ufid);
+        return true;
+    }
+
+    if (command.rfind("printStudentZone ", 0) == 0) {
+        stringstream lineStream(command);
+        string action;
+        string ufid;
+        string extra;
+
+        // read command / ufid
+        if (!(lineStream >> action >> ufid)) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // should have one argument after command
+        if (lineStream >> extra) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        // fail on bad ufid format or missing student
+        if (!ValidUFID(ufid) || studentRecords.find(ufid) == studentRecords.end()) {
+            cout << "unsuccessful" << endl;
+            return false;
+        }
+
+        PrintStudentZone(ufid);
         return true;
     }
 
